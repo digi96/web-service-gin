@@ -21,8 +21,10 @@ var (
 	db     *dbCon.Queries
 	ctx    context.Context
 
-	ContactController controllers.ContactController
-	ContactRoutes     routes.ContactRoutes
+	ContactController   controllers.ContactController
+	ContactRoutes       routes.ContactRoutes
+	RideOrderController controllers.RideOrderController
+	RideOrderRoutes     routes.RideOrderRoutes
 )
 
 func init() {
@@ -44,6 +46,9 @@ func init() {
 
 	ContactController = *controllers.NewContactController(db, ctx)
 	ContactRoutes = routes.NewRouteContact(ContactController)
+
+	RideOrderController = *controllers.NewRideOrderController(db, ctx)
+	RideOrderRoutes = routes.NewRouteRideOrder(RideOrderController)
 
 	server = gin.Default()
 }
@@ -77,6 +82,7 @@ func main() {
 	})
 
 	ContactRoutes.ContactRoute(router)
+	RideOrderRoutes.RideOrderRoutes(router)
 
 	server.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": fmt.Sprintf("The specified route %s not found", ctx.Request.URL)})

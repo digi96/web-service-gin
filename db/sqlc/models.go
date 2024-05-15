@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,4 +19,15 @@ type Contact struct {
 	Street      string    `json:"street"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type Rideorder struct {
+	RideorderID int32        `json:"rideorder_id"`
+	ContactID   uuid.UUID    `json:"contact_id"`
+	RiderName   string       `json:"rider_name"`
+	RiderPhone  string       `json:"rider_phone"`
+	Destination string       `json:"destination"`
+	PickupAt    sql.NullTime `json:"pickup_at"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   sql.NullTime `json:"updated_at"`
 }

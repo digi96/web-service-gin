@@ -27,17 +27,32 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createContactStmt, err = db.PrepareContext(ctx, createContact); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateContact: %w", err)
 	}
+	if q.createOrderStmt, err = db.PrepareContext(ctx, createOrder); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateOrder: %w", err)
+	}
 	if q.deleteContactStmt, err = db.PrepareContext(ctx, deleteContact); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteContact: %w", err)
+	}
+	if q.deleteOrderStmt, err = db.PrepareContext(ctx, deleteOrder); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteOrder: %w", err)
 	}
 	if q.getContactByIdStmt, err = db.PrepareContext(ctx, getContactById); err != nil {
 		return nil, fmt.Errorf("error preparing query GetContactById: %w", err)
 	}
+	if q.getOrderByIdStmt, err = db.PrepareContext(ctx, getOrderById); err != nil {
+		return nil, fmt.Errorf("error preparing query GetOrderById: %w", err)
+	}
 	if q.listContactsStmt, err = db.PrepareContext(ctx, listContacts); err != nil {
 		return nil, fmt.Errorf("error preparing query ListContacts: %w", err)
 	}
+	if q.listOrdersStmt, err = db.PrepareContext(ctx, listOrders); err != nil {
+		return nil, fmt.Errorf("error preparing query ListOrders: %w", err)
+	}
 	if q.updateContactStmt, err = db.PrepareContext(ctx, updateContact); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateContact: %w", err)
+	}
+	if q.updateOrderStmt, err = db.PrepareContext(ctx, updateOrder); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateOrder: %w", err)
 	}
 	return &q, nil
 }
@@ -49,9 +64,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createContactStmt: %w", cerr)
 		}
 	}
+	if q.createOrderStmt != nil {
+		if cerr := q.createOrderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createOrderStmt: %w", cerr)
+		}
+	}
 	if q.deleteContactStmt != nil {
 		if cerr := q.deleteContactStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteContactStmt: %w", cerr)
+		}
+	}
+	if q.deleteOrderStmt != nil {
+		if cerr := q.deleteOrderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteOrderStmt: %w", cerr)
 		}
 	}
 	if q.getContactByIdStmt != nil {
@@ -59,14 +84,29 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getContactByIdStmt: %w", cerr)
 		}
 	}
+	if q.getOrderByIdStmt != nil {
+		if cerr := q.getOrderByIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getOrderByIdStmt: %w", cerr)
+		}
+	}
 	if q.listContactsStmt != nil {
 		if cerr := q.listContactsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listContactsStmt: %w", cerr)
 		}
 	}
+	if q.listOrdersStmt != nil {
+		if cerr := q.listOrdersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listOrdersStmt: %w", cerr)
+		}
+	}
 	if q.updateContactStmt != nil {
 		if cerr := q.updateContactStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateContactStmt: %w", cerr)
+		}
+	}
+	if q.updateOrderStmt != nil {
+		if cerr := q.updateOrderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateOrderStmt: %w", cerr)
 		}
 	}
 	return err
@@ -109,10 +149,15 @@ type Queries struct {
 	db                 DBTX
 	tx                 *sql.Tx
 	createContactStmt  *sql.Stmt
+	createOrderStmt    *sql.Stmt
 	deleteContactStmt  *sql.Stmt
+	deleteOrderStmt    *sql.Stmt
 	getContactByIdStmt *sql.Stmt
+	getOrderByIdStmt   *sql.Stmt
 	listContactsStmt   *sql.Stmt
+	listOrdersStmt     *sql.Stmt
 	updateContactStmt  *sql.Stmt
+	updateOrderStmt    *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -120,9 +165,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		db:                 tx,
 		tx:                 tx,
 		createContactStmt:  q.createContactStmt,
+		createOrderStmt:    q.createOrderStmt,
 		deleteContactStmt:  q.deleteContactStmt,
+		deleteOrderStmt:    q.deleteOrderStmt,
 		getContactByIdStmt: q.getContactByIdStmt,
+		getOrderByIdStmt:   q.getOrderByIdStmt,
 		listContactsStmt:   q.listContactsStmt,
+		listOrdersStmt:     q.listOrdersStmt,
 		updateContactStmt:  q.updateContactStmt,
+		updateOrderStmt:    q.updateOrderStmt,
 	}
 }
