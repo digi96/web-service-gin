@@ -23,7 +23,16 @@ func NewContactController(db *db.Queries, ctx context.Context) *ContactControlle
 	return &ContactController{db, ctx}
 }
 
-// Create contact  handler
+// Web-Service-gin godoc
+// @Summary Create a new contact
+// @Schemes
+// @Description Create a new contact in DB.
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param   contact 	body   schemas.CreateContact  true  "Contact JSON"
+// @Success 200 {object} db.Contact
+// @Router /contacts [post]
 func (cc *ContactController) CreateContact(ctx *gin.Context) {
 	var payload *schemas.CreateContact
 
@@ -52,7 +61,17 @@ func (cc *ContactController) CreateContact(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"status": "successfully created contact", "contact": contact})
 }
 
-// Update contact handler
+// Web-Service-gin godoc
+// @Summary Update a contact
+// @Schemes
+// @Description Update a contact in DB.
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param   contactId 	path   string  true  "Contact ID"
+// @Param   contact 	body   schemas.UpdateContact  true  "Contact JSON"
+// @Success 200 {object} db.Contact
+// @Router /contacts/{contactId} [patch]
 func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 	var payload *schemas.UpdateContact
 	contactId := ctx.Param("contactId")
@@ -86,7 +105,16 @@ func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"status": "successfully updated contact", "contact": contact})
 }
 
-// Get a single handler
+// Web-Service-gin godoc
+// @Summary Show a contact
+// @Schemes
+// @Description get contact by contact_id
+// @Tags contacts
+// @Accept json
+// @Produce json
+// @Param   contactId 	path   string  true  "Contact ID"
+// @Success 200 {object} db.Contact
+// @Router /contacts/{contactId} [get]
 func (cc *ContactController) GetContactById(ctx *gin.Context) {
 	contactId := ctx.Param("contactId")
 
@@ -103,7 +131,14 @@ func (cc *ContactController) GetContactById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"status": "Successfully retrived id", "contact": contact})
 }
 
-// Retrieve all records handlers
+// Web-Service-gin godoc
+// @Summary Get all contacts
+// @Schemes
+// @Description Get all contacts
+// @Tags contacts
+// @Produce json
+// @Success 200 {object} []db.Contact
+// @Router /contacts [get]
 func (cc *ContactController) GetAllContacts(ctx *gin.Context) {
 	var page = ctx.DefaultQuery("page", "1")
 	var limit = ctx.DefaultQuery("limit", "10")
