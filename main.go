@@ -12,6 +12,11 @@ import (
 	"example/web-service-gin/routes"
 	"example/web-service-gin/util"
 
+	docs "example/web-service-gin/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -75,6 +80,7 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	docs.SwaggerInfo.BasePath = "/api"
 	router := server.Group("/api")
 
 	router.GET("/healthcheck", func(ctx *gin.Context) {
@@ -87,6 +93,9 @@ func main() {
 	server.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": fmt.Sprintf("The specified route %s not found", ctx.Request.URL)})
 	})
+
+	url := ginSwagger.URL("doc.json")
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 
 	log.Fatal(server.Run(":" + config.ServerAddress))
 }
