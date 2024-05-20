@@ -16,3 +16,34 @@ go get -u github.com/swaggo/files
 ## Annotation
 
 ###### example: https://santoshk.dev/posts/2022/how-to-integrate-swagger-ui-in-go-backend-gin-edition/
+
+# Testify
+
+## Install
+
+```console
+go get github.com/stretchr/testify
+```
+
+## Design Test Function
+
+```code
+package yours
+
+import (
+  "testing"
+  "github.com/stretchr/testify/assert"
+)
+
+func TestSomething(t *testing.T) {
+
+  assert.True(t, true, "True is true!")
+
+}
+```
+
+## Run Test
+
+```console
+go test -v -cover ./...
+```
