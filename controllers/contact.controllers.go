@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,13 +12,27 @@ import (
 	"example/web-service-gin/schemas"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/cache/v8"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type ContactController struct {
 	db  *db.Queries
 	ctx context.Context
 }
+
+var (
+	mycache = cache.New(&cache.Options{
+		Redis: redis.NewRing(&redis.RingOptions{
+			Addrs: map[string]string{
+				"server": ":6379",
+			},
+		}),
+		LocalCache: cache.NewTinyLFU(1000, time.Minute),
+	})
+)
 
 func NewContactController(db *db.Queries, ctx context.Context) *ContactController {
 	return &ContactController{db, ctx}
@@ -118,6 +133,19 @@ func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 func (cc *ContactController) GetContactById(ctx *gin.Context) {
 	contactId := ctx.Param("contactId")
 
+	var wantedCheck []byte
+	if err := mycache.Get(ctx, contactId, &wantedCheck); err == nil {
+		fmt.Println(wantedCheck)
+		var cachedContact db.Contact
+		err = msgpack.Unmarshal(wantedCheck, &cachedContact)
+		if err != nil {
+			ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed retrieving contact", "error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{"status": "Successfully retrived id(cached)", "contact": cachedContact})
+		return
+	}
+
 	contact, err := cc.db.GetContactById(ctx, uuid.MustParse(contactId))
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -126,6 +154,24 @@ func (cc *ContactController) GetContactById(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed retrieving contact", "error": err.Error()})
 		return
+	}
+
+	//ctx := context.TODO()
+	//key :=
+
+	b, err := msgpack.Marshal(contact)
+
+	if err != nil {
+		fmt.Println("failed to marshal contact object before storing to redis", err.Error())
+	}
+
+	if err := mycache.Set(&cache.Item{
+		Ctx:   ctx,
+		Key:   contactId,
+		Value: b,
+		TTL:   time.Hour,
+	}); err != nil {
+		fmt.Println("failed to store object to redis", err.Error())
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "Successfully retrived id", "contact": contact})
