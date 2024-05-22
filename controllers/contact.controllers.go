@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,12 +16,13 @@ import (
 )
 
 type ContactController struct {
-	db  *db.Queries
-	ctx context.Context
+	db      *sql.DB
+	queries *db.Queries
+	ctx     context.Context
 }
 
-func NewContactController(db *db.Queries, ctx context.Context) *ContactController {
-	return &ContactController{db, ctx}
+func NewContactController(db *sql.DB, queries *db.Queries, ctx context.Context) *ContactController {
+	return &ContactController{db, queries, ctx}
 }
 
 // Create contact  handler
@@ -29,6 +31,25 @@ func (cc *ContactController) CreateContact(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "Failed payload", "error": err.Error()})
+		return
+	}
+
+	//check if fisrt name already exist
+	tx, err := cc.db.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback()
+
+	qtx := cc.queries.WithTx(tx)
+
+	checkEmptyContact, err := qtx.GetContactById(ctx, uuid.New())
+	if err != nil {
+		fmt.Println("expected logic")
+	} else {
+		fmt.Println("unexpected logic")
+		fmt.Println(checkEmptyContact)
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "Failed to create contact", "error": err.Error()})
 		return
 	}
 
@@ -42,13 +63,14 @@ func (cc *ContactController) CreateContact(ctx *gin.Context) {
 		UpdatedAt:   now,
 	}
 
-	contact, err := cc.db.CreateContact(ctx, *args)
+	contact, err := qtx.CreateContact(ctx, *args)
 
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed retrieving contact", "error": err.Error()})
 		return
 	}
 
+	tx.Commit()
 	ctx.JSON(http.StatusOK, gin.H{"status": "successfully created contact", "contact": contact})
 }
 
@@ -72,7 +94,7 @@ func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 		UpdatedAt:   sql.NullTime{Time: now, Valid: true},
 	}
 
-	contact, err := cc.db.UpdateContact(ctx, *args)
+	contact, err := cc.queries.UpdateContact(ctx, *args)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -90,7 +112,7 @@ func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 func (cc *ContactController) GetContactById(ctx *gin.Context) {
 	contactId := ctx.Param("contactId")
 
-	contact, err := cc.db.GetContactById(ctx, uuid.MustParse(contactId))
+	contact, err := cc.queries.GetContactById(ctx, uuid.MustParse(contactId))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "Failed to retrieve contact with this ID"})
@@ -117,7 +139,7 @@ func (cc *ContactController) GetAllContacts(ctx *gin.Context) {
 		Offset: int32(offset),
 	}
 
-	contacts, err := cc.db.ListContacts(ctx, *args)
+	contacts, err := cc.queries.ListContacts(ctx, *args)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed to retrieve contacts", "error": err.Error()})
 		return
@@ -134,7 +156,7 @@ func (cc *ContactController) GetAllContacts(ctx *gin.Context) {
 func (cc *ContactController) DeleteContactById(ctx *gin.Context) {
 	contactId := ctx.Param("contactId")
 
-	_, err := cc.db.GetContactById(ctx, uuid.MustParse(contactId))
+	_, err := cc.queries.GetContactById(ctx, uuid.MustParse(contactId))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "Failed to retrieve contact with this ID"})
@@ -144,7 +166,7 @@ func (cc *ContactController) DeleteContactById(ctx *gin.Context) {
 		return
 	}
 
-	err = cc.db.DeleteContact(ctx, uuid.MustParse(contactId))
+	err = cc.queries.DeleteContact(ctx, uuid.MustParse(contactId))
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "failed", "error": err.Error()})
 		return
