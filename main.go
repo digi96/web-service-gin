@@ -9,6 +9,7 @@ import (
 
 	"example/web-service-gin/controllers"
 	dbCon "example/web-service-gin/db/sqlc"
+	"example/web-service-gin/rabbitmqconnect"
 	"example/web-service-gin/routes"
 	"example/web-service-gin/util"
 
@@ -73,6 +74,10 @@ func main() {
 	// router.POST("/albums", postAlbums)
 
 	// router.Run("localhost:8080")
+
+	//start rabbitmq consumer
+	rabbitmq := rabbitmqconnect.RabbitMQ{QueueName: "defaultqueue"}
+	rabbitmq.Consume()
 
 	config, err := util.LoadConfig(".")
 

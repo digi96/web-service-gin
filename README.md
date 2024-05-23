@@ -47,3 +47,9 @@ func TestSomething(t *testing.T) {
 ```console
 go test -v -cover ./...
 ```
+
+# Rabbitmq
+
+## Reference
+
+###### https://medium.com/@celalsahinaltinisik/rabbitmq-publish-consume-with-golang-26412784b6e5
