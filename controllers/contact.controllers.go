@@ -3,13 +3,16 @@ package controllers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	db "example/web-service-gin/db/sqlc"
+	"example/web-service-gin/rabbitmqconnect"
 	"example/web-service-gin/schemas"
+	"example/web-service-gin/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/cache/v8"
@@ -72,6 +75,14 @@ func (cc *ContactController) CreateContact(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed retrieving contact", "error": err.Error()})
 		return
 	}
+
+	contactJson, err := json.Marshal(contact)
+	if err != nil {
+		util.FailOnError(err, "Failed to Marshal contact struct")
+	}
+
+	rabbit := rabbitmqconnect.RabbitMQ{Body: string(contactJson), QueueName: "defaultqueue"}
+	rabbit.Puplish()
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "successfully created contact", "contact": contact})
 }

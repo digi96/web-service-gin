@@ -13,6 +13,12 @@ go get -u github.com/swaggo/gin-swagger
 go get -u github.com/swaggo/files
 ```
 
+## Generate Document
+
+```console
+swag init
+```
+
 ## Annotation
 
 ###### example: https://santoshk.dev/posts/2022/how-to-integrate-swagger-ui-in-go-backend-gin-edition/

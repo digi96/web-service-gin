@@ -75,10 +75,6 @@ func main() {
 
 	// router.Run("localhost:8080")
 
-	//start rabbitmq consumer
-	rabbitmq := rabbitmqconnect.RabbitMQ{QueueName: "defaultqueue"}
-	rabbitmq.Consume()
-
 	config, err := util.LoadConfig(".")
 
 	if err != nil {
@@ -102,7 +98,12 @@ func main() {
 	url := ginSwagger.URL("doc.json")
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 
+	//start rabbitmq consumer
+	rabbitmq := rabbitmqconnect.RabbitMQ{QueueName: "defaultqueue"}
+	go rabbitmq.Consume()
+
 	log.Fatal(server.Run(":" + config.ServerAddress))
+
 }
 
 // // albums slice to seed record album data.

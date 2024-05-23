@@ -7,8 +7,11 @@ migratedown:
 sqlc:
 	sqlc generate
 
+swag:
+	swag init
+
 test:
 	go test -v -cover ./...
 
 
-.PHONY: migrateup migratedown sqlc test
+.PHONY: migrateup migratedown sqlc swag test
