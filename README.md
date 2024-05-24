@@ -47,3 +47,11 @@ func TestSomething(t *testing.T) {
 ```console
 go test -v -cover ./...
 ```
+
+# JobRunner
+
+## Instal
+
+```console
+go get -u github.com/bamzi/jobrunner
+```

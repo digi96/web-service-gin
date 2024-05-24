@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"example/web-service-gin/controllers"
 	dbCon "example/web-service-gin/db/sqlc"
@@ -14,6 +15,7 @@ import (
 
 	docs "example/web-service-gin/docs"
 
+	"github.com/bamzi/jobrunner"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -58,6 +60,14 @@ func init() {
 	server = gin.Default()
 }
 
+type GreetingJob struct {
+	Name string
+}
+
+func (g GreetingJob) Run() {
+	fmt.Println("Hello,", g.Name)
+}
+
 // // album represents data about a record album.
 // type album struct {
 // 	ID     string  `json:"id"`
@@ -96,6 +106,9 @@ func main() {
 
 	url := ginSwagger.URL("doc.json")
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+
+	jobrunner.Start()
+	jobrunner.Every(5*time.Second, GreetingJob{Name: "dj"})
 
 	log.Fatal(server.Run(":" + config.ServerAddress))
 }
