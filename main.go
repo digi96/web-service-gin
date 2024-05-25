@@ -55,7 +55,7 @@ func init() {
 	RideOrderController = *controllers.NewRideOrderController(db, ctx)
 	RideOrderRoutes = routes.NewRouteRideOrder(RideOrderController)
 
-	server = gin.Default()
+	//server = gin.Default()
 }
 
 // // album represents data about a record album.
@@ -67,7 +67,7 @@ func init() {
 // }
 
 func main() {
-	// router := gin.Default()
+	router := gin.Default()
 	// router.GET("/albums", getAlbums)
 	// router.GET("/albums/:id", getAlbumByID)
 	// router.POST("/albums", postAlbums)
@@ -81,23 +81,24 @@ func main() {
 	}
 
 	docs.SwaggerInfo.BasePath = "/api"
-	router := server.Group("/api")
+
+	routerGroup := router.Group("/api")
 
 	router.GET("/healthcheck", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "The contact APi is working fine"})
 	})
 
-	ContactRoutes.ContactRoute(router)
-	RideOrderRoutes.RideOrderRoutes(router)
+	ContactRoutes.ContactRoute(routerGroup)
+	RideOrderRoutes.RideOrderRoutes(routerGroup)
 
-	server.NoRoute(func(ctx *gin.Context) {
+	router.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": fmt.Sprintf("The specified route %s not found", ctx.Request.URL)})
 	})
 
 	url := ginSwagger.URL("doc.json")
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 
-	log.Fatal(server.Run(":" + config.ServerAddress))
+	log.Fatal(router.Run(":" + config.ServerAddress))
 }
 
 // // albums slice to seed record album data.
