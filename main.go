@@ -22,9 +22,9 @@ import (
 )
 
 var (
-	server *gin.Engine
-	db     *dbCon.Queries
-	ctx    context.Context
+	//server *gin.Engine
+	db  *dbCon.Queries
+	ctx context.Context
 
 	ContactController   controllers.ContactController
 	ContactRoutes       routes.ContactRoutes
