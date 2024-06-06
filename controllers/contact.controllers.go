@@ -10,6 +10,7 @@ import (
 
 	db "example/web-service-gin/db/sqlc"
 	"example/web-service-gin/schemas"
+	"example/web-service-gin/token"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/cache/v8"
@@ -19,9 +20,16 @@ import (
 )
 
 type ContactController struct {
-	db  *db.Queries
-	ctx context.Context
+	db         *db.Queries
+	ctx        context.Context
+	TokenMaker token.Maker
 }
+
+const (
+	authorizationHeaderKey  = "authorization"
+	authorizationTypeBearer = "bearer"
+	authorizationPayloadKey = "authorization_payload"
+)
 
 var (
 	mycache = cache.New(&cache.Options{
@@ -34,8 +42,8 @@ var (
 	})
 )
 
-func NewContactController(db *db.Queries, ctx context.Context) *ContactController {
-	return &ContactController{db, ctx}
+func NewContactController(db *db.Queries, ctx context.Context, tokenMaker token.Maker) *ContactController {
+	return &ContactController{db, ctx, tokenMaker}
 }
 
 // Web-Service-gin godoc
@@ -128,6 +136,7 @@ func (cc *ContactController) UpdateContact(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param   contactId 	path   string  true  "Contact ID"
+// @param Authorization header string true "Authorization"
 // @Success 200 {object} db.Contact
 // @Router /contacts/{contactId} [get]
 func (cc *ContactController) GetContactById(ctx *gin.Context) {
@@ -153,6 +162,13 @@ func (cc *ContactController) GetContactById(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusBadGateway, gin.H{"status": "Failed retrieving contact", "error": err.Error()})
+		return
+	}
+
+	//check if the owner of this contact
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if contact.ContactID.String() != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "failed", "message": "contact doesn't belong to the authenticated user"})
 		return
 	}
 

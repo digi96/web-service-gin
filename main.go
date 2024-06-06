@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"example/web-service-gin/controllers"
 	dbCon "example/web-service-gin/db/sqlc"
 	"example/web-service-gin/routes"
+	"example/web-service-gin/token"
 	"example/web-service-gin/util"
 
 	docs "example/web-service-gin/docs"
@@ -22,19 +24,32 @@ import (
 )
 
 var (
-	//server *gin.Engine
-	db  *dbCon.Queries
-	ctx context.Context
+	server *gin.Engine
+	db     *dbCon.Queries
+	ctx    context.Context
 
 	ContactController   controllers.ContactController
 	ContactRoutes       routes.ContactRoutes
 	RideOrderController controllers.RideOrderController
 	RideOrderRoutes     routes.RideOrderRoutes
+	AuthController      controllers.AuthController
+	AuthRoutes          routes.AuthRoutes
+	tokenMaker          token.Maker
 )
 
 func init() {
 	ctx = context.TODO()
 	config, err := util.LoadConfig(".")
+
+	tokenMakerTemp, err := token.NewPasetoMaker(config.SymmetricKey)
+
+	tokenMaker = tokenMakerTemp
+
+	if err != nil {
+		log.Fatalf("Could not create token maker %v", err)
+	}
+
+	//ginMiddlewareHandler := middleware.AuthMiddleware(tokenMaker)
 
 	if err != nil {
 		log.Fatalf("could not loadconfig: %v", err)
@@ -49,13 +64,16 @@ func init() {
 
 	fmt.Println("PostgreSql connected successfully...")
 
-	ContactController = *controllers.NewContactController(db, ctx)
+	ContactController = *controllers.NewContactController(db, ctx, tokenMaker)
 	ContactRoutes = routes.NewRouteContact(ContactController)
 
 	RideOrderController = *controllers.NewRideOrderController(db, ctx)
 	RideOrderRoutes = routes.NewRouteRideOrder(RideOrderController)
 
-	//server = gin.Default()
+	AuthController = *controllers.NewAuthController(db, ctx, tokenMaker)
+	AuthRoutes = routes.NewRouteAuth(AuthController)
+
+	server = gin.Default()
 }
 
 // // album represents data about a record album.
@@ -67,7 +85,7 @@ func init() {
 // }
 
 func main() {
-	router := gin.Default()
+	//router := gin.Default()
 	// router.GET("/albums", getAlbums)
 	// router.GET("/albums/:id", getAlbumByID)
 	// router.POST("/albums", postAlbums)
@@ -82,23 +100,44 @@ func main() {
 
 	docs.SwaggerInfo.BasePath = "/api"
 
-	routerGroup := router.Group("/api")
+	routerGroup := server.Group("/api")
 
-	router.GET("/healthcheck", func(ctx *gin.Context) {
+	server.GET("/healthcheck", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "The contact APi is working fine"})
 	})
 
 	ContactRoutes.ContactRoute(routerGroup)
 	RideOrderRoutes.RideOrderRoutes(routerGroup)
+	AuthRoutes.AuthRoute(routerGroup)
 
-	router.NoRoute(func(ctx *gin.Context) {
+	server.NoRoute(func(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": fmt.Sprintf("The specified route %s not found", ctx.Request.URL)})
 	})
 
-	url := ginSwagger.URL("doc.json")
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+	// Web-Service-gin godoc
+	// @Summary Login
+	// @Schemes
+	// @Description Login to get token.
+	// @Tags Login
+	// @Accept json
+	// @Produce json
+	// @Success 200
+	// @Router /login [post]
+	server.POST("/login/", func(c *gin.Context) {
 
-	log.Fatal(router.Run(":" + config.ServerAddress))
+		generatedToken, err := tokenMaker.CreateToken("testuser", time.Minute*30)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"staus": "failed", "message": fmt.Sprintf("Failed to get token maker, %s", err.Error())})
+		}
+
+		c.JSON(200, gin.H{"token": generatedToken})
+
+	})
+
+	url := ginSwagger.URL("doc.json")
+	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
+
+	log.Fatal(server.Run(":" + config.ServerAddress))
 }
 
 // // albums slice to seed record album data.
